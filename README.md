@@ -1,17 +1,16 @@
-# tcc_rotas_tecnico
+# AplicativoDeRotas
 
-A new Flutter project.
+Aplicativo mobile desenvolvido para a disciplina de Engenharia de Software 2. O projeto auxilia profissionais autônomos de assistência técnica a gerenciar clientes, ordens de serviço e, futuramente, planejar rotas de atendimento considerando distância e prioridade.
 
-## Getting Started
+## Funcionalidades implementadas
 
-This project is a starting point for a Flutter application.
+- Cadastro, consulta, edição e exclusão de clientes;
+- Identificador interno para cada cliente;
+- Pesquisa de clientes por nome, telefone, endereço, bairro, cidade ou ID;
+- Armazenamento local com SQLite.
 
-A few resources to get you started if this is your first Flutter project:
+## Tecnologias
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Flutter;
+- Dart;
+- SQLite (`sqflite`).
