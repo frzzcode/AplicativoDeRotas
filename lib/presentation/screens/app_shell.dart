@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'clientes_screen.dart';
 import 'em_breve_screen.dart';
 import 'ordens_servico_screen.dart';
+import 'rotas_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -17,7 +18,7 @@ class _AppShellState extends State<AppShell> {
   final _telas = const [
     OrdensServicoScreen(),
     ClientesScreen(),
-    EmBreveScreen(titulo: 'Rotas', icone: Icons.route_outlined),
+    RotasScreen(),
     EmBreveScreen(titulo: 'Ajustes', icone: Icons.settings_outlined),
   ];
 

@@ -4,4 +4,6 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Somente desenvolvimento: serviço local acessado por adb reverse. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>

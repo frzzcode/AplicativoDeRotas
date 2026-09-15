@@ -47,3 +47,8 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Configuração local de acesso ao serviço de rotas
+config/rotas.local.json
+.env
+.env.*
