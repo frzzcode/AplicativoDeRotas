@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/models/ordem_servico.dart';
 import '../../data/repositories/ordem_servico_repository.dart';
 import 'nova_ordem_servico_screen.dart';
+import 'ordem_servico_detalhes_screen.dart';
 
 class OrdensServicoScreen extends StatefulWidget {
   const OrdensServicoScreen({super.key});
@@ -140,9 +141,20 @@ class _OrdensServicoScreenState extends State<OrdensServicoScreen> {
                           final ordem = ordens[index];
                           final cor = _corStatus(context, ordem.status);
                           return Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () async {
+                                await Navigator.push<bool>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => OrdemServicoDetalhesScreen(ordem: ordem),
+                                  ),
+                                );
+                                _carregarOrdens();
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
@@ -181,6 +193,7 @@ class _OrdensServicoScreenState extends State<OrdensServicoScreen> {
                                     ],
                                   ),
                                 ],
+                                ),
                               ),
                             ),
                           );

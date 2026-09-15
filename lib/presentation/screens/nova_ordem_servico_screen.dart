@@ -4,11 +4,14 @@ import '../../data/models/cliente.dart';
 import '../../data/models/equipamento.dart';
 import '../../data/models/ordem_servico.dart';
 import '../../data/repositories/cliente_repository.dart';
+import '../../data/repositories/equipamento_repository.dart';
 import '../../data/repositories/ordem_servico_repository.dart';
 import 'selecionar_equipamento_screen.dart';
 
 class NovaOrdemServicoScreen extends StatefulWidget {
-  const NovaOrdemServicoScreen({super.key});
+  final OrdemServico? ordem;
+
+  const NovaOrdemServicoScreen({super.key, this.ordem});
 
   @override
   State<NovaOrdemServicoScreen> createState() => _NovaOrdemServicoScreenState();
@@ -17,6 +20,7 @@ class NovaOrdemServicoScreen extends StatefulWidget {
 class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
   final _formKey = GlobalKey<FormState>();
   final ClienteRepository _clienteRepository = ClienteRepository();
+  final EquipamentoRepository _equipamentoRepository = EquipamentoRepository();
   final OrdemServicoRepository _ordemRepository = OrdemServicoRepository();
   final _problemaController = TextEditingController();
   final _servicoController = TextEditingController();
@@ -34,10 +38,45 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
   bool _precisaPeca = false;
   bool _salvando = false;
 
+  bool get _editando => widget.ordem != null;
+
   @override
   void initState() {
     super.initState();
-    _clientesFuture = _clienteRepository.listarTodos();
+    _clientesFuture = _carregarClientes();
+    _preencherCamposEdicao();
+  }
+
+  Future<List<Cliente>> _carregarClientes() async {
+    final clientes = await _clienteRepository.listarTodos();
+    final ordem = widget.ordem;
+    if (ordem != null) {
+      for (final cliente in clientes) {
+        if (cliente.id == ordem.clienteId) {
+          _cliente = cliente;
+          break;
+        }
+      }
+    }
+    return clientes;
+  }
+
+  Future<void> _preencherCamposEdicao() async {
+    final ordem = widget.ordem;
+    if (ordem == null) return;
+
+    _problemaController.text = ordem.problema;
+    _servicoController.text = ordem.servicoRealizado ?? '';
+    _valorController.text = ordem.valor?.toStringAsFixed(2).replaceAll('.', ',') ?? '';
+    _observacoesController.text = ordem.observacoes ?? '';
+    _dataAtendimento = DateTime.tryParse(ordem.dataAtendimento) ?? DateTime.now();
+    _dataPrevista = ordem.dataPrevista == null ? null : DateTime.tryParse(ordem.dataPrevista!);
+    _status = ordem.status;
+    _prioridade = ordem.prioridade;
+    _recolhimento = ordem.recolhimento;
+    _precisaPeca = ordem.precisaPeca;
+    _equipamento = await _equipamentoRepository.buscarPorId(ordem.equipamentoId);
+    if (mounted) setState(() {});
   }
 
   @override
@@ -99,8 +138,8 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
     }
 
     setState(() => _salvando = true);
-    await _ordemRepository.inserir(
-      OrdemServico(
+    final ordem = OrdemServico(
+        id: widget.ordem?.id,
         clienteId: _cliente!.id!,
         equipamentoId: _equipamento!.id!,
         dataAtendimento: _dataBanco(_dataAtendimento),
@@ -113,8 +152,12 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
         recolhimento: _recolhimento,
         dataPrevista: _dataPrevista == null ? null : _dataBanco(_dataPrevista!),
         observacoes: _textoOuNulo(_observacoesController),
-      ),
-    );
+      );
+    if (_editando) {
+      await _ordemRepository.atualizar(ordem);
+    } else {
+      await _ordemRepository.inserir(ordem);
+    }
     if (mounted) Navigator.pop(context, true);
   }
 
@@ -126,7 +169,9 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nova ordem de serviço')),
+      appBar: AppBar(
+        title: Text(_editando ? 'Editar ordem de serviço' : 'Nova ordem de serviço'),
+      ),
       body: FutureBuilder<List<Cliente>>(
         future: _clientesFuture,
         builder: (context, snapshot) {
@@ -293,7 +338,9 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.save_outlined),
-                    label: const Text('Salvar ordem de serviço'),
+                    label: Text(
+                      _editando ? 'Salvar alterações' : 'Salvar ordem de serviço',
+                    ),
                   ),
                 ),
               ],
