@@ -30,7 +30,11 @@ class _OrdensServicoScreenState extends State<OrdensServicoScreen> {
   }
 
   void _carregarOrdens() {
-    setState(() => _ordensFuture = _repository.listarTodas());
+    // setState deve apenas atualizar o estado da tela. A consulta ao banco é
+    // assíncrona, então guardamos o Future sem retorná-lo para o setState.
+    setState(() {
+      _ordensFuture = _repository.listarTodas();
+    });
   }
 
   List<OrdemServico> _filtrar(List<OrdemServico> ordens) {
