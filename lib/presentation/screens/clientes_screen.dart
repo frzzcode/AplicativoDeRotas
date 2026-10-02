@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../data/models/cliente.dart';
 import '../../data/repositories/cliente_repository.dart';
 import 'cliente_detalhes_screen.dart';
@@ -129,7 +130,9 @@ class _ClientesScreenState extends State<ClientesScreen> {
                             subtitle: Text(
                               'ID #${cliente.id} • ${cliente.telefone ?? 'Sem telefone'}',
                             ),
-                            leading: const CircleAvatar(child: Icon(Icons.person)),
+                            leading: const CircleAvatar(
+                              child: Icon(Icons.person),
+                            ),
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () async {
                               await Navigator.push<bool>(

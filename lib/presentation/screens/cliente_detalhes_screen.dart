@@ -26,7 +26,9 @@ class _ClienteDetalhesScreenState extends State<ClienteDetalhesScreen> {
   Future<void> _editarCliente() async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => NovoClienteScreen(cliente: _cliente)),
+      MaterialPageRoute(
+        builder: (context) => NovoClienteScreen(cliente: _cliente),
+      ),
     );
 
     if (!mounted) return;
@@ -70,6 +72,8 @@ class _ClienteDetalhesScreenState extends State<ClienteDetalhesScreen> {
       _cliente.complemento,
       _cliente.bairro,
       _cliente.cidade,
+      _cliente.uf,
+      _cliente.cep,
     ].where((item) => item != null && item.trim().isNotEmpty);
     return partes.isEmpty ? 'Endereço não informado' : partes.join(', ');
   }
@@ -132,7 +136,10 @@ class _ClienteDetalhesScreenState extends State<ClienteDetalhesScreen> {
             child: ElevatedButton.icon(
               onPressed: _editarCliente,
               icon: const Icon(Icons.edit_outlined),
-              label: const Text('Editar cliente', style: TextStyle(fontSize: 16)),
+              label: const Text(
+                'Editar cliente',
+                style: TextStyle(fontSize: 16),
+              ),
             ),
           ),
         ],

@@ -10,6 +10,12 @@ class Cliente {
   final String? complemento;
   final String? bairro;
   final String? cidade;
+  final String? uf;
+  final String? cep;
+  // Coordenadas são preenchidas automaticamente pelo app ao gerar uma rota.
+  // Elas não aparecem no formulário do usuário.
+  final double? latitude;
+  final double? longitude;
   final String? observacoes;
 
   Cliente({
@@ -21,6 +27,10 @@ class Cliente {
     this.complemento,
     this.bairro,
     this.cidade,
+    this.uf,
+    this.cep,
+    this.latitude,
+    this.longitude,
     this.observacoes,
   });
 
@@ -36,6 +46,10 @@ class Cliente {
       'complemento': complemento,
       'bairro': bairro,
       'cidade': cidade,
+      'uf': uf,
+      'cep': cep,
+      'latitude': latitude,
+      'longitude': longitude,
       'observacoes': observacoes,
     };
   }
@@ -52,6 +66,10 @@ class Cliente {
       complemento: map['complemento'],
       bairro: map['bairro'],
       cidade: map['cidade'],
+      uf: map['uf'],
+      cep: map['cep'],
+      latitude: (map['latitude'] as num?)?.toDouble(),
+      longitude: (map['longitude'] as num?)?.toDouble(),
       observacoes: map['observacoes'],
     );
   }

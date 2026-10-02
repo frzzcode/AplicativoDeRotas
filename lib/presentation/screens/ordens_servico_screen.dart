@@ -109,18 +109,27 @@ class _OrdensServicoScreenState extends State<OrdensServicoScreen> {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   scrollDirection: Axis.horizontal,
-                  children: ['Todas', 'Aberta', 'Agendada', 'Em atendimento', 'Aguardando peça', 'Finalizada']
-                      .map(
-                        (status) => Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(status),
-                            selected: _filtroStatus == status,
-                            onSelected: (_) => setState(() => _filtroStatus = status),
-                          ),
-                        ),
-                      )
-                      .toList(),
+                  children:
+                      [
+                            'Todas',
+                            'Aberta',
+                            'Agendada',
+                            'Em atendimento',
+                            'Aguardando peça',
+                            'Finalizada',
+                          ]
+                          .map(
+                            (status) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ChoiceChip(
+                                label: Text(status),
+                                selected: _filtroStatus == status,
+                                onSelected: (_) =>
+                                    setState(() => _filtroStatus = status),
+                              ),
+                            ),
+                          )
+                          .toList(),
                 ),
               ),
               Expanded(
@@ -147,7 +156,9 @@ class _OrdensServicoScreenState extends State<OrdensServicoScreen> {
                                 await Navigator.push<bool>(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => OrdemServicoDetalhesScreen(ordem: ordem),
+                                    builder: (_) => OrdemServicoDetalhesScreen(
+                                      ordem: ordem,
+                                    ),
                                   ),
                                 );
                                 _carregarOrdens();
@@ -155,44 +166,59 @@ class _OrdensServicoScreenState extends State<OrdensServicoScreen> {
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'OS #${ordem.id}',
-                                        style: Theme.of(context).textTheme.titleMedium,
-                                      ),
-                                      const Spacer(),
-                                      Chip(
-                                        label: Text(ordem.status),
-                                        labelStyle: TextStyle(color: cor),
-                                        side: BorderSide(color: cor),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    ordem.clienteNome ?? 'Cliente não encontrado',
-                                    style: Theme.of(context).textTheme.titleSmall,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(ordem.equipamentoDescricao ?? 'Equipamento não encontrado'),
-                                  const Divider(height: 24),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.calendar_today_outlined, size: 18),
-                                      const SizedBox(width: 6),
-                                      Text(_formatarData(ordem.dataAtendimento)),
-                                      const Spacer(),
-                                      if (ordem.valor != null)
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
                                         Text(
-                                          'R\$ ${ordem.valor!.toStringAsFixed(2).replaceAll('.', ',')}',
-                                          style: Theme.of(context).textTheme.titleMedium,
+                                          'OS #${ordem.id}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium,
                                         ),
-                                    ],
-                                  ),
-                                ],
+                                        const Spacer(),
+                                        Chip(
+                                          label: Text(ordem.status),
+                                          labelStyle: TextStyle(color: cor),
+                                          side: BorderSide(color: cor),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      ordem.clienteNome ??
+                                          'Cliente não encontrado',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      ordem.equipamentoDescricao ??
+                                          'Equipamento não encontrado',
+                                    ),
+                                    const Divider(height: 24),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.calendar_today_outlined,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          _formatarData(ordem.dataAtendimento),
+                                        ),
+                                        const Spacer(),
+                                        if (ordem.valor != null)
+                                          Text(
+                                            'R\$ ${ordem.valor!.toStringAsFixed(2).replaceAll('.', ',')}',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium,
+                                          ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

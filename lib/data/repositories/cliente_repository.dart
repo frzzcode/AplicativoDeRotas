@@ -46,6 +46,22 @@ class ClienteRepository {
     );
   }
 
+  // Salva a conversão endereço -> coordenadas para não consultar o serviço
+  // novamente toda vez que uma rota usar o mesmo cliente.
+  Future<int> atualizarCoordenadas(
+    int id,
+    double latitude,
+    double longitude,
+  ) async {
+    final db = await DBHelper.instance.database;
+    return await db.update(
+      'clientes',
+      {'latitude': latitude, 'longitude': longitude},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   // DELETE - remove um cliente pelo id
   Future<int> excluir(int id) async {
     final db = await DBHelper.instance.database;

@@ -28,7 +28,8 @@ class _AppShellState extends State<AppShell> {
       body: IndexedStack(index: _indiceAtual, children: _telas),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _indiceAtual,
-        onDestinationSelected: (indice) => setState(() => _indiceAtual = indice),
+        onDestinationSelected: (indice) =>
+            setState(() => _indiceAtual = indice),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.build_outlined),

@@ -14,7 +14,8 @@ class OrdemServicoDetalhesScreen extends StatefulWidget {
       _OrdemServicoDetalhesScreenState();
 }
 
-class _OrdemServicoDetalhesScreenState extends State<OrdemServicoDetalhesScreen> {
+class _OrdemServicoDetalhesScreenState
+    extends State<OrdemServicoDetalhesScreen> {
   final OrdemServicoRepository _repository = OrdemServicoRepository();
   late OrdemServico _ordem;
 
@@ -74,7 +75,9 @@ class _OrdemServicoDetalhesScreenState extends State<OrdemServicoDetalhesScreen>
           _InfoItem(
             icone: Icons.ac_unit_outlined,
             titulo: 'Equipamento',
-            valor: _ordem.equipamentoDescricao ?? 'Equipamento #${_ordem.equipamentoId}',
+            valor:
+                _ordem.equipamentoDescricao ??
+                'Equipamento #${_ordem.equipamentoId}',
           ),
           _InfoItem(
             icone: Icons.calendar_today_outlined,
@@ -111,7 +114,8 @@ class _OrdemServicoDetalhesScreenState extends State<OrdemServicoDetalhesScreen>
             _InfoItem(
               icone: Icons.attach_money_outlined,
               titulo: 'Valor do serviço',
-              valor: 'R\$ ${_ordem.valor!.toStringAsFixed(2).replaceAll('.', ',')}',
+              valor:
+                  'R\$ ${_ordem.valor!.toStringAsFixed(2).replaceAll('.', ',')}',
             ),
           if (_ordem.observacoes?.isNotEmpty ?? false)
             _InfoItem(

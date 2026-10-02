@@ -81,7 +81,9 @@ class _SelecionarEquipamentoScreenState
               const SizedBox(height: 8),
               Expanded(
                 child: equipamentos.isEmpty
-                    ? const Center(child: Text('Nenhum equipamento encontrado.'))
+                    ? const Center(
+                        child: Text('Nenhum equipamento encontrado.'),
+                      )
                     : ListView.separated(
                         itemCount: equipamentos.length,
                         separatorBuilder: (_, _) => const Divider(height: 1),

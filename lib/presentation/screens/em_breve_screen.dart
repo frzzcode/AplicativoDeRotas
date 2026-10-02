@@ -16,9 +16,16 @@ class EmBreveScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icone, size: 56, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                icone,
+                size: 56,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(height: 16),
-              Text('$titulo em breve', style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                '$titulo em breve',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 8),
               const Text(
                 'Esta área será construída nas próximas etapas do aplicativo.',

@@ -21,6 +21,8 @@ class ParadaRota {
     cliente.numero,
     cliente.bairro,
     cliente.cidade,
+    cliente.uf,
+    cliente.cep,
     'Brasil',
   ].whereType<String>().where((s) => s.trim().isNotEmpty).join(', ');
 }

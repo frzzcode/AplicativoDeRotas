@@ -32,6 +32,9 @@ dependencies:
     sdk: flutter
   sqflite: ^2.3.0 
   path: ^1.9.0
+  http: ^1.6.0
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -46,6 +49,12 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+# A versão 2.3.x migrou para JNI e exige o Android SDK 35 separadamente.
+# Mantemos a última versão oficial anterior para compatibilidade com o ambiente
+# Android usado neste projeto; o flutter_map a utiliza apenas no cache local.
+dependency_overrides:
+  path_provider_android: 2.2.23
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

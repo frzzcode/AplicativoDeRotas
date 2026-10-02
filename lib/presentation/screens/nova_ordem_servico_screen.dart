@@ -67,15 +67,21 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
 
     _problemaController.text = ordem.problema;
     _servicoController.text = ordem.servicoRealizado ?? '';
-    _valorController.text = ordem.valor?.toStringAsFixed(2).replaceAll('.', ',') ?? '';
+    _valorController.text =
+        ordem.valor?.toStringAsFixed(2).replaceAll('.', ',') ?? '';
     _observacoesController.text = ordem.observacoes ?? '';
-    _dataAtendimento = DateTime.tryParse(ordem.dataAtendimento) ?? DateTime.now();
-    _dataPrevista = ordem.dataPrevista == null ? null : DateTime.tryParse(ordem.dataPrevista!);
+    _dataAtendimento =
+        DateTime.tryParse(ordem.dataAtendimento) ?? DateTime.now();
+    _dataPrevista = ordem.dataPrevista == null
+        ? null
+        : DateTime.tryParse(ordem.dataPrevista!);
     _status = ordem.status;
     _prioridade = ordem.prioridade;
     _recolhimento = ordem.recolhimento;
     _precisaPeca = ordem.precisaPeca;
-    _equipamento = await _equipamentoRepository.buscarPorId(ordem.equipamentoId);
+    _equipamento = await _equipamentoRepository.buscarPorId(
+      ordem.equipamentoId,
+    );
     if (mounted) setState(() {});
   }
 
@@ -97,7 +103,9 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
   Future<void> _escolherData({required bool prevista}) async {
     final selecionada = await showDatePicker(
       context: context,
-      initialDate: prevista ? (_dataPrevista ?? _dataAtendimento) : _dataAtendimento,
+      initialDate: prevista
+          ? (_dataPrevista ?? _dataAtendimento)
+          : _dataAtendimento,
       firstDate: DateTime(2024),
       lastDate: DateTime(2035),
     );
@@ -139,20 +147,20 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
 
     setState(() => _salvando = true);
     final ordem = OrdemServico(
-        id: widget.ordem?.id,
-        clienteId: _cliente!.id!,
-        equipamentoId: _equipamento!.id!,
-        dataAtendimento: _dataBanco(_dataAtendimento),
-        problema: _problemaController.text.trim(),
-        servicoRealizado: _textoOuNulo(_servicoController),
-        valor: _valorNumerico(),
-        prioridade: _prioridade,
-        status: _status,
-        precisaPeca: _precisaPeca,
-        recolhimento: _recolhimento,
-        dataPrevista: _dataPrevista == null ? null : _dataBanco(_dataPrevista!),
-        observacoes: _textoOuNulo(_observacoesController),
-      );
+      id: widget.ordem?.id,
+      clienteId: _cliente!.id!,
+      equipamentoId: _equipamento!.id!,
+      dataAtendimento: _dataBanco(_dataAtendimento),
+      problema: _problemaController.text.trim(),
+      servicoRealizado: _textoOuNulo(_servicoController),
+      valor: _valorNumerico(),
+      prioridade: _prioridade,
+      status: _status,
+      precisaPeca: _precisaPeca,
+      recolhimento: _recolhimento,
+      dataPrevista: _dataPrevista == null ? null : _dataBanco(_dataPrevista!),
+      observacoes: _textoOuNulo(_observacoesController),
+    );
     if (_editando) {
       await _ordemRepository.atualizar(ordem);
     } else {
@@ -170,7 +178,9 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_editando ? 'Editar ordem de serviço' : 'Nova ordem de serviço'),
+        title: Text(
+          _editando ? 'Editar ordem de serviço' : 'Nova ordem de serviço',
+        ),
       ),
       body: FutureBuilder<List<Cliente>>(
         future: _clientesFuture,
@@ -203,7 +213,8 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
                       )
                       .toList(),
                   onChanged: (cliente) => setState(() => _cliente = cliente),
-                  validator: (valor) => valor == null ? 'Selecione um cliente' : null,
+                  validator: (valor) =>
+                      valor == null ? 'Selecione um cliente' : null,
                 ),
                 if (clientes.isEmpty)
                   const Padding(
@@ -211,7 +222,10 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
                     child: Text('Cadastre um cliente antes de criar uma OS.'),
                   ),
                 const SizedBox(height: 24),
-                Text('Equipamento', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Equipamento',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: _selecionarEquipamento,
@@ -256,10 +270,24 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
                     labelText: 'Status',
                     border: OutlineInputBorder(),
                   ),
-                  items: const [
-                    'Aberta', 'Agendada', 'Em atendimento', 'Aguardando peça',
-                    'Equipamento recolhido', 'Em manutenção', 'Finalizada', 'Cancelada',
-                  ].map((status) => DropdownMenuItem(value: status, child: Text(status))).toList(),
+                  items:
+                      const [
+                            'Aberta',
+                            'Agendada',
+                            'Em atendimento',
+                            'Aguardando peça',
+                            'Equipamento recolhido',
+                            'Em manutenção',
+                            'Finalizada',
+                            'Cancelada',
+                          ]
+                          .map(
+                            (status) => DropdownMenuItem(
+                              value: status,
+                              child: Text(status),
+                            ),
+                          )
+                          .toList(),
                   onChanged: (valor) => setState(() => _status = valor!),
                 ),
                 const SizedBox(height: 16),
@@ -270,7 +298,10 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
                     border: OutlineInputBorder(),
                   ),
                   items: const ['Baixa', 'Normal', 'Alta']
-                      .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+                      .map(
+                        (item) =>
+                            DropdownMenuItem(value: item, child: Text(item)),
+                      )
                       .toList(),
                   onChanged: (valor) => setState(() => _prioridade = valor!),
                 ),
@@ -281,9 +312,19 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
                     labelText: 'Atendimento / recolhimento',
                     border: OutlineInputBorder(),
                   ),
-                  items: const ['No local', 'Recolher equipamento', 'Entregar posteriormente']
-                      .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-                      .toList(),
+                  items:
+                      const [
+                            'No local',
+                            'Recolher equipamento',
+                            'Entregar posteriormente',
+                          ]
+                          .map(
+                            (item) => DropdownMenuItem(
+                              value: item,
+                              child: Text(item),
+                            ),
+                          )
+                          .toList(),
                   onChanged: (valor) => setState(() => _recolhimento = valor!),
                 ),
                 SwitchListTile(
@@ -294,7 +335,9 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
                 ),
                 TextFormField(
                   controller: _valorController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Valor do serviço',
                     prefixText: 'R\$ ',
@@ -314,7 +357,11 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.event_available_outlined),
                   title: const Text('Previsão de conclusão'),
-                  subtitle: Text(_dataPrevista == null ? 'Não informada' : _formatarData(_dataPrevista!)),
+                  subtitle: Text(
+                    _dataPrevista == null
+                        ? 'Não informada'
+                        : _formatarData(_dataPrevista!),
+                  ),
                   trailing: const Icon(Icons.edit_calendar_outlined),
                   onTap: () => _escolherData(prevista: true),
                 ),
@@ -339,7 +386,9 @@ class _NovaOrdemServicoScreenState extends State<NovaOrdemServicoScreen> {
                           )
                         : const Icon(Icons.save_outlined),
                     label: Text(
-                      _editando ? 'Salvar alterações' : 'Salvar ordem de serviço',
+                      _editando
+                          ? 'Salvar alterações'
+                          : 'Salvar ordem de serviço',
                     ),
                   ),
                 ),

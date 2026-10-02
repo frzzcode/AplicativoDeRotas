@@ -17,10 +17,7 @@ class OrdemServicoRepository {
 
   Future<OrdemServico?> buscarPorId(int id) async {
     final db = await DBHelper.instance.database;
-    final resultado = await db.rawQuery(
-      '$_consultaBase WHERE os.id = ?',
-      [id],
-    );
+    final resultado = await db.rawQuery('$_consultaBase WHERE os.id = ?', [id]);
     if (resultado.isEmpty) return null;
     return OrdemServico.fromMap(resultado.first);
   }

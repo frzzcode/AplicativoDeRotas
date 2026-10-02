@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../data/models/cliente.dart';
 import '../../data/repositories/cliente_repository.dart';
 
@@ -24,6 +25,8 @@ class _NovoClienteScreenState extends State<NovoClienteScreen> {
   final _complementoController = TextEditingController();
   final _bairroController = TextEditingController();
   final _cidadeController = TextEditingController();
+  final _ufController = TextEditingController();
+  final _cepController = TextEditingController();
   final _observacoesController = TextEditingController();
 
   bool get _editando => widget.cliente != null;
@@ -41,6 +44,8 @@ class _NovoClienteScreenState extends State<NovoClienteScreen> {
     _complementoController.text = cliente.complemento ?? '';
     _bairroController.text = cliente.bairro ?? '';
     _cidadeController.text = cliente.cidade ?? '';
+    _ufController.text = cliente.uf ?? '';
+    _cepController.text = cliente.cep ?? '';
     _observacoesController.text = cliente.observacoes ?? '';
   }
 
@@ -49,15 +54,20 @@ class _NovoClienteScreenState extends State<NovoClienteScreen> {
     // valida se o campo obrigatório (nome) foi preenchido
     if (!_formKey.currentState!.validate()) return;
 
+    final enderecoAlterado = _enderecoFoiAlterado();
     final cliente = Cliente(
       id: widget.cliente?.id,
-      nome: _nomeController.text,
+      nome: _nomeController.text.trim(),
       telefone: _textoOuNulo(_telefoneController),
       endereco: _textoOuNulo(_enderecoController),
       numero: _textoOuNulo(_numeroController),
       complemento: _textoOuNulo(_complementoController),
       bairro: _textoOuNulo(_bairroController),
       cidade: _textoOuNulo(_cidadeController),
+      uf: _textoOuNulo(_ufController)?.toUpperCase(),
+      cep: _textoOuNulo(_cepController),
+      latitude: enderecoAlterado ? null : widget.cliente?.latitude,
+      longitude: enderecoAlterado ? null : widget.cliente?.longitude,
       observacoes: _textoOuNulo(_observacoesController),
     );
 
@@ -76,6 +86,23 @@ class _NovoClienteScreenState extends State<NovoClienteScreen> {
     return texto.isEmpty ? null : texto;
   }
 
+  bool _enderecoFoiAlterado() {
+    final anterior = widget.cliente;
+    if (anterior == null) return true;
+
+    String normalizar(String? texto) => (texto ?? '').trim().toLowerCase();
+
+    return normalizar(anterior.endereco) !=
+            normalizar(_enderecoController.text) ||
+        normalizar(anterior.numero) != normalizar(_numeroController.text) ||
+        normalizar(anterior.complemento) !=
+            normalizar(_complementoController.text) ||
+        normalizar(anterior.bairro) != normalizar(_bairroController.text) ||
+        normalizar(anterior.cidade) != normalizar(_cidadeController.text) ||
+        normalizar(anterior.uf) != normalizar(_ufController.text) ||
+        normalizar(anterior.cep) != normalizar(_cepController.text);
+  }
+
   @override
   void dispose() {
     // libera a memória dos controllers quando a tela é fechada
@@ -86,6 +113,8 @@ class _NovoClienteScreenState extends State<NovoClienteScreen> {
     _complementoController.dispose();
     _bairroController.dispose();
     _cidadeController.dispose();
+    _ufController.dispose();
+    _cepController.dispose();
     _observacoesController.dispose();
     super.dispose();
   }
@@ -93,7 +122,9 @@ class _NovoClienteScreenState extends State<NovoClienteScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_editando ? 'Editar Cliente' : 'Novo Cliente')),
+      appBar: AppBar(
+        title: Text(_editando ? 'Editar Cliente' : 'Novo Cliente'),
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -134,6 +165,37 @@ class _NovoClienteScreenState extends State<NovoClienteScreen> {
             TextFormField(
               controller: _cidadeController,
               decoration: const InputDecoration(labelText: 'Cidade'),
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _ufController,
+                    decoration: const InputDecoration(
+                      labelText: 'Estado/UF (opcional)',
+                      hintText: 'SC',
+                    ),
+                    textCapitalization: TextCapitalization.characters,
+                    maxLength: 2,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _cepController,
+                    decoration: const InputDecoration(
+                      labelText: 'CEP (opcional)',
+                      hintText: '00000-000',
+                    ),
+                    keyboardType: TextInputType.number,
+                    maxLength: 9,
+                  ),
+                ),
+              ],
+            ),
+            const Text(
+              'UF e CEP não são obrigatórios, mas ajudam a localizar endereços com nomes parecidos.',
             ),
             TextFormField(
               controller: _observacoesController,

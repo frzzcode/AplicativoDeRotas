@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../data/models/parada_rota.dart';
 import '../../data/repositories/cliente_repository.dart';
 import '../../data/repositories/ordem_servico_repository.dart';
 import '../../data/services/rota_service.dart';
+import '../widgets/rota_mapa.dart';
 
 class RotasScreen extends StatefulWidget {
   const RotasScreen({super.key});
@@ -104,10 +104,10 @@ class _RotasScreenState extends State<RotasScreen> {
   }
 
   void _selecionar(ParadaRota parada, bool adicionar) {
-    if (adicionar && _selecionadas.length >= 25) {
+    if (adicionar && _selecionadas.length >= 20) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('O Google permite até 25 paradas nesta rota.'),
+          content: Text('Selecione no máximo 20 paradas por rota.'),
         ),
       );
       return;
@@ -151,7 +151,7 @@ class _RotasScreenState extends State<RotasScreen> {
           : paradas.indexWhere((p) => p.chave == _destino);
       final resultado = await RotaService().gerar(
         _origem.text.trim(),
-        paradas.map((p) => p.endereco).toList(),
+        paradas,
         fim,
       );
       if (!mounted) return;
@@ -168,37 +168,6 @@ class _RotasScreenState extends State<RotasScreen> {
     }
   }
 
-  Future<void> _abrirMaps(List<String> pontos) async {
-    // No navegador móvel, Maps URLs aceita até 3 paradas intermediárias.
-    final url = Uri.https('www.google.com', '/maps/dir/', {
-      'api': '1',
-      'origin': pontos.first,
-      'destination': pontos.last,
-      'travelmode': 'driving',
-      if (pontos.length > 2)
-        'waypoints': pontos.sublist(1, pontos.length - 1).join('|'),
-    });
-    try {
-      if (url.toString().length > 2048) {
-        throw Exception(
-          'Endereços longos demais. Abra cada trecho separadamente.',
-        );
-      }
-      await const MethodChannel('tcc_rotas/maps')
-          .invokeMethod<void>('abrir', url.toString());
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Não foi possível abrir o Google Maps. Tente abrir um trecho individual.',
-            ),
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final termo = _busca.text.trim().toLowerCase().replaceFirst('#', '');
@@ -211,11 +180,6 @@ class _RotasScreenState extends State<RotasScreen> {
                   : p.titulo.toLowerCase().contains(termo)),
         )
         .toList();
-    final pontos = [
-      _origem.text.trim(),
-      ..._sequencia.map((p) => p.endereco),
-      if (_destino == null) _origem.text.trim(),
-    ];
     return Scaffold(
       appBar: AppBar(
         title: const Text('Planejar rota'),
@@ -286,7 +250,7 @@ class _RotasScreenState extends State<RotasScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '${_selecionadas.length}/25 selecionadas. Pesquise e marque uma por vez; a seleção é acumulada.',
+            '${_selecionadas.length}/20 selecionadas. Pesquise e marque uma por vez; a seleção é acumulada.',
           ),
           Wrap(
             spacing: 6,
@@ -349,7 +313,7 @@ class _RotasScreenState extends State<RotasScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'O ponto final fica fixo. O Google reorganiza os demais atendimentos. Prioridades ainda não são consideradas.',
+            'O ponto final fica fixo. O app reorganiza os demais atendimentos pela menor distância estimada nas ruas. Prioridades ainda não são consideradas.',
           ),
           if (_erro != null)
             Padding(
@@ -368,7 +332,7 @@ class _RotasScreenState extends State<RotasScreen> {
           if (_resultado != null) ...[
             const Divider(height: 32),
             Text(
-              'Sequência recomendada pelo Google Maps',
+              'Sequência otimizada',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             Text(
@@ -377,6 +341,9 @@ class _RotasScreenState extends State<RotasScreen> {
             const Text(
               'Estimativa sem tempo de serviço ou trânsito em tempo real. Confira o destino no mapa antes de sair.',
             ),
+            const SizedBox(height: 16),
+            RotaMapa(resultado: _resultado!),
+            const SizedBox(height: 12),
             ListTile(
               leading: const Icon(Icons.home_outlined),
               title: const Text('Origem'),
@@ -387,39 +354,11 @@ class _RotasScreenState extends State<RotasScreen> {
                 leading: CircleAvatar(child: Text('${i + 1}')),
                 title: Text(_sequencia[i].titulo),
                 subtitle: Text(_sequencia[i].endereco),
-                trailing: IconButton(
-                  tooltip: 'Abrir trecho no Maps',
-                  icon: const Icon(Icons.directions),
-                  onPressed: () => _abrirMaps([pontos[i], pontos[i + 1]]),
-                ),
               ),
             if (_destino == null)
               ListTile(
                 title: const Text('Retorno à origem'),
                 subtitle: Text(_origem.text),
-                trailing: IconButton(
-                  tooltip: 'Abrir retorno no Maps',
-                  icon: const Icon(Icons.directions),
-                  onPressed: () =>
-                      _abrirMaps([pontos[pontos.length - 2], pontos.last]),
-                ),
-              ),
-            // Divide apenas a abertura no Maps. A otimização considera todas as paradas juntas.
-            for (var inicio = 0; inicio < pontos.length - 1; inicio += 4)
-              OutlinedButton.icon(
-                icon: const Icon(Icons.map_outlined),
-                label: Text(
-                  pontos.length <= 5
-                      ? 'Ver rota no Google Maps'
-                      : 'Ver parte ${inicio ~/ 4 + 1} no Google Maps',
-                ),
-                onPressed: () => _abrirMaps(
-                  pontos.sublist(inicio, (inicio + 5).clamp(0, pontos.length)),
-                ),
-              ),
-            if (pontos.length > 5)
-              const Text(
-                'O Google Maps será aberto em partes para respeitar o limite de paradas dos links em celulares. Siga as partes em ordem.',
               ),
           ],
         ],

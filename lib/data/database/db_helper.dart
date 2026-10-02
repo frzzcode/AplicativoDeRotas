@@ -25,7 +25,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate, // só roda na primeira vez que o app abre
       onUpgrade: _onUpgrade,
     );
@@ -46,6 +46,10 @@ class DBHelper {
         complemento TEXT,
         bairro TEXT,
         cidade TEXT,
+        uf TEXT,
+        cep TEXT,
+        latitude REAL,
+        longitude REAL,
         observacoes TEXT
       )
     ''');
@@ -57,6 +61,14 @@ class DBHelper {
     if (oldVersion < 2) {
       await _criarTabelasOS(db);
       await _popularCatalogoArCondicionado(db);
+    }
+    if (oldVersion < 3) {
+      // Migração não destrutiva: mantém os clientes já cadastrados e
+      // acrescenta os dados usados pela nova integração de rotas.
+      await db.execute('ALTER TABLE clientes ADD COLUMN uf TEXT');
+      await db.execute('ALTER TABLE clientes ADD COLUMN cep TEXT');
+      await db.execute('ALTER TABLE clientes ADD COLUMN latitude REAL');
+      await db.execute('ALTER TABLE clientes ADD COLUMN longitude REAL');
     }
   }
 
@@ -100,11 +112,29 @@ class DBHelper {
       ['LG', 'Dual Inverter S3-Q12JA31A', 12000, '1.085 W', 'Split Inverter'],
       ['LG', 'Dual Inverter S3-Q18KL31A', 18000, '1.670 W', 'Split Inverter'],
       ['Daikin', 'EcoSwing RHP12S5VL', 12000, '1.040 W', 'Split Inverter'],
-      ['Midea', 'Xtreme Save Connect 42AGVQI12M5', 12000, '1.090 W', 'Split Inverter'],
+      [
+        'Midea',
+        'Xtreme Save Connect 42AGVQI12M5',
+        12000,
+        '1.090 W',
+        'Split Inverter',
+      ],
       ['Gree', 'G-Top Auto 12.000', 12000, '1.100 W', 'Split'],
-      ['Elgin', 'Eco Inverter II HJFI12C2IA', 12000, '1.090 W', 'Split Inverter'],
+      [
+        'Elgin',
+        'Eco Inverter II HJFI12C2IA',
+        12000,
+        '1.090 W',
+        'Split Inverter',
+      ],
       ['Consul', 'Bem Estar CBF12CB', 12000, '1.110 W', 'Split'],
-      ['Springer Midea', 'AirVolution 42AFFCI18S5', 18000, '1.650 W', 'Split Inverter'],
+      [
+        'Springer Midea',
+        'AirVolution 42AFFCI18S5',
+        18000,
+        '1.650 W',
+        'Split Inverter',
+      ],
     ];
     final batch = db.batch();
     for (final modelo in modelos) {
