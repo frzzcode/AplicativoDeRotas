@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../data/models/parada_rota.dart';
 import '../../data/repositories/cliente_repository.dart';
@@ -15,6 +16,7 @@ class RotasScreen extends StatefulWidget {
 
 class _RotasScreenState extends State<RotasScreen> {
   final _origem = TextEditingController();
+  final _cepOrigem = TextEditingController();
   final _busca = TextEditingController();
   final _selecionadas = <String, ParadaRota>{};
   List<ParadaRota> _opcoes = [];
@@ -36,6 +38,7 @@ class _RotasScreenState extends State<RotasScreen> {
   @override
   void dispose() {
     _origem.dispose();
+    _cepOrigem.dispose();
     _busca.dispose();
     super.dispose();
   }
@@ -132,6 +135,10 @@ class _RotasScreenState extends State<RotasScreen> {
       );
       return;
     }
+    if (_cepOrigem.text.replaceAll(RegExp(r'\D'), '').length != 8) {
+      setState(() => _erro = 'Informe os 8 números do CEP da origem.');
+      return;
+    }
     final paradas = _selecionadas.values.toList();
     if (paradas.any((p) => !p.enderecoValido)) {
       setState(
@@ -151,6 +158,7 @@ class _RotasScreenState extends State<RotasScreen> {
           : paradas.indexWhere((p) => p.chave == _destino);
       final resultado = await RotaService().gerar(
         _origem.text.trim(),
+        _cepOrigem.text.trim(),
         paradas,
         fim,
       );
@@ -232,6 +240,22 @@ class _RotasScreenState extends State<RotasScreen> {
             decoration: const InputDecoration(
               labelText: 'Origem: casa ou oficina',
               hintText: 'Rua, número, cidade e UF',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _cepOrigem,
+            enabled: !_gerando,
+            onChanged: (_) => setState(_invalidar),
+            keyboardType: TextInputType.number,
+            maxLength: 8,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: const InputDecoration(
+              labelText: 'CEP da origem',
+              hintText: 'Informe os 8 números',
+              helperText:
+                  'Necessário para localizar casa ou oficina com precisão.',
               border: OutlineInputBorder(),
             ),
           ),

@@ -51,10 +51,12 @@ class RotaService {
 
   Future<ResultadoRota> gerar(
     String enderecoOrigem,
+    String cepOrigem,
     List<ParadaRota> paradas,
     int? destino,
   ) async {
     if (enderecoOrigem.trim().isEmpty ||
+        cepOrigem.replaceAll(RegExp(r'\D'), '').length != 8 ||
         paradas.isEmpty ||
         paradas.length > 20 ||
         paradas.any((parada) => !parada.enderecoValido)) {
@@ -65,7 +67,7 @@ class RotaService {
     }
 
     try {
-      final origem = await _localizarOrigem(enderecoOrigem);
+      final origem = await _localizarOrigem(enderecoOrigem, cepOrigem);
       final cacheDaRota = <int, Coordenada>{};
       final coordenadas = <Coordenada>[];
       for (final parada in paradas) {
@@ -102,12 +104,14 @@ class RotaService {
     }
   }
 
-  Future<Coordenada> _localizarOrigem(String endereco) async {
+  Future<Coordenada> _localizarOrigem(String endereco, String cep) async {
     try {
-      return await _geocodificacao.buscar(endereco.trim());
+      final porCep = await _geocodificacao.buscarPorCep(cep);
+      if (porCep != null) return porCep;
+      return await _geocodificacao.buscar('$endereco, $cep');
     } catch (erro) {
       throw Exception(
-        'Não foi possível localizar a origem. Informe rua, número, cidade e, se possível, UF ou CEP. ${_mensagem(erro)}',
+        'Não foi possível localizar a origem. Confira o endereço e o CEP. ${_mensagem(erro)}',
       );
     }
   }
@@ -128,10 +132,17 @@ class RotaService {
       );
     } else {
       try {
-        coordenada = await _geocodificacao.buscar(parada.endereco);
+        coordenada = await _geocodificacao.buscarEndereco(
+          logradouro: cliente.endereco!,
+          numero: cliente.numero,
+          bairro: cliente.bairro,
+          cidade: cliente.cidade!,
+          uf: cliente.uf,
+          cep: cliente.cep,
+        );
       } catch (erro) {
         throw Exception(
-          'Não foi possível localizar ${parada.titulo}. Confira rua, número, cidade e, se possível, UF ou CEP. ${_mensagem(erro)}',
+          'Não foi possível localizar ${parada.titulo}. Confira o endereço e o CEP. ${_mensagem(erro)}',
         );
       }
       if (id != null) {
