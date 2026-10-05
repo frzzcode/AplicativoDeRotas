@@ -25,7 +25,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _onCreate, // só roda na primeira vez que o app abre
       onUpgrade: _onUpgrade,
     );
@@ -69,6 +69,13 @@ class DBHelper {
       await db.execute('ALTER TABLE clientes ADD COLUMN cep TEXT');
       await db.execute('ALTER TABLE clientes ADD COLUMN latitude REAL');
       await db.execute('ALTER TABLE clientes ADD COLUMN longitude REAL');
+    }
+    if (oldVersion < 4) {
+      // A versão anterior aceitava uma coordenada aproximada da BrasilAPI.
+      // CEPs diferentes podiam receber o mesmo ponto. Limpamos apenas esse
+      // cache automático para que seja recalculado corretamente; nenhum dado
+      // digitado pelo usuário e nenhuma OS são removidos.
+      await db.update('clientes', {'latitude': null, 'longitude': null});
     }
   }
 

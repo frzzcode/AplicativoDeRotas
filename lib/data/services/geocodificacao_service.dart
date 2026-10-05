@@ -7,7 +7,8 @@ import 'package:http/http.dart' as http;
 import '../models/coordenada.dart';
 
 // Converte endereços em coordenadas sem exigir que o usuário conheça latitude
-// e longitude. Para endereços brasileiros, CEP é a fonte preferencial.
+// e longitude. O CEP ajuda a completar o endereço, mas a coordenada final vem
+// do Nominatim/OpenStreetMap para evitar pontos genéricos no centro da cidade.
 class GeocodificacaoService {
   static DateTime? _ultimaConsultaNominatim;
   static const _headers = {
@@ -46,12 +47,76 @@ class GeocodificacaoService {
 
   final http.Client? _client;
 
+  // O nome público `client` deixa os testes legíveis; o campo permanece privado.
+  // ignore: prefer_initializing_formals
   GeocodificacaoService({http.Client? client}) : _client = client;
 
-  // A BrasilAPI CEP V2 usa múltiplos provedores e, quando disponível, devolve
-  // diretamente as coordenadas. null significa que o CEP existe, mas não tem
-  // geolocalização, ou que não foi encontrado; nesse caso usamos o fallback.
+  // A BrasilAPI é usada para transformar um CEP em rua, bairro, cidade e UF.
+  // As coordenadas presentes na resposta não são usadas: alguns CEPs distintos
+  // recebem o mesmo ponto aproximado, o que produz rotas falsas de 0 km.
   Future<Coordenada?> buscarPorCep(String cep) async {
+    final dados = await _consultarCep(cep);
+    if (dados == null || !dados.temEndereco) return null;
+
+    final resultado = await _buscarEnderecoNoNominatim(
+      logradouro: dados.logradouro!,
+      bairro: dados.bairro,
+      cidade: dados.cidade!,
+      uf: dados.uf,
+      cep: dados.cep,
+    );
+    if (resultado == null) {
+      _log('CEP encontrado, mas o endereço não existe no OpenStreetMap.');
+    }
+    return resultado;
+  }
+
+  Future<Coordenada> buscarEndereco({
+    required String logradouro,
+    String? numero,
+    String? bairro,
+    required String cidade,
+    String? uf,
+    String? cep,
+  }) async {
+    // Primeiro tentamos o endereço completo digitado pelo usuário. Assim o
+    // número do imóvel é preservado quando ele existe no OpenStreetMap.
+    final peloEndereco = await _buscarEnderecoNoNominatim(
+      logradouro: logradouro,
+      numero: numero,
+      bairro: bairro,
+      cidade: cidade,
+      uf: uf,
+      cep: cep,
+    );
+    if (peloEndereco != null) return peloEndereco;
+
+    // Se o texto cadastrado estiver incompleto ou com grafia diferente, o CEP
+    // fornece os componentes oficiais do endereço para uma segunda tentativa.
+    if (cep?.trim().isNotEmpty ?? false) {
+      final porCep = await buscarPorCep(cep!);
+      if (porCep != null) return porCep;
+    }
+
+    throw Exception('Endereço não encontrado. Confira rua, cidade, UF e CEP.');
+  }
+
+  Future<Coordenada> buscar(String endereco) async {
+    final comBrasil = endereco.toLowerCase().contains('brasil')
+        ? endereco.trim()
+        : '${endereco.trim()}, Brasil';
+    final expandido = _expandirUf(comBrasil);
+    final semNumero = _removerNumeroDoImovel(expandido);
+    final tentativas = <String>{expandido, comBrasil, semNumero};
+
+    for (final tentativa in tentativas) {
+      final resultado = await _consultarNominatim({'q': tentativa});
+      if (resultado != null) return resultado;
+    }
+    throw Exception('Endereço não encontrado. Confira o CEP.');
+  }
+
+  Future<_DadosCep?> _consultarCep(String cep) async {
     final apenasNumeros = cep.replaceAll(RegExp(r'\D'), '');
     if (apenasNumeros.length != 8) {
       throw Exception('CEP inválido. Informe os 8 números do CEP.');
@@ -70,19 +135,22 @@ class GeocodificacaoService {
     }
 
     final data = jsonDecode(resposta.body) as Map<String, dynamic>;
-    final location = data['location'] as Map<String, dynamic>?;
-    final coordinates = location?['coordinates'] as Map<String, dynamic>?;
-    final latitude = _numero(coordinates?['latitude']);
-    final longitude = _numero(coordinates?['longitude']);
-    if (latitude == null || longitude == null) {
-      _log('BrasilAPI encontrou o CEP, mas não devolveu coordenadas.');
-      return null;
-    }
-    _log('BrasilAPI localizou o CEP com coordenadas.');
-    return Coordenada(latitude: latitude, longitude: longitude);
+    final dados = _DadosCep(
+      cep: apenasNumeros,
+      logradouro: _texto(data['street']),
+      bairro: _texto(data['neighborhood']),
+      cidade: _texto(data['city']),
+      uf: _texto(data['state']),
+    );
+    _log(
+      dados.temEndereco
+          ? 'BrasilAPI completou o endereço do CEP.'
+          : 'BrasilAPI encontrou o CEP, mas não devolveu rua e cidade.',
+    );
+    return dados;
   }
 
-  Future<Coordenada> buscarEndereco({
+  Future<Coordenada?> _buscarEnderecoNoNominatim({
     required String logradouro,
     String? numero,
     String? bairro,
@@ -90,46 +158,69 @@ class GeocodificacaoService {
     String? uf,
     String? cep,
   }) async {
-    if (cep?.trim().isNotEmpty ?? false) {
-      final porCep = await buscarPorCep(cep!);
-      if (porCep != null) return porCep;
-    }
+    final rua = logradouro.trim();
+    final cidadeLimpa = cidade.trim();
+    final estado = uf?.trim().isNotEmpty ?? false
+        ? _nomesUf[uf!.trim().toUpperCase()] ?? uf.trim()
+        : null;
+    final cepLimpo = cep?.trim();
+    final numeroLimpo = numero?.trim();
 
-    final estruturado = <String, String>{
-      'street': [
-        numero,
-        logradouro,
-      ].whereType<String>().where((valor) => valor.trim().isNotEmpty).join(' '),
-      'city': cidade,
-      if (uf?.trim().isNotEmpty ?? false)
-        'state': _nomesUf[uf!.trim().toUpperCase()] ?? uf.trim(),
-      if (cep?.trim().isNotEmpty ?? false) 'postalcode': cep!.trim(),
-      'country': 'Brasil',
-    };
-    final resultadoEstruturado = await _consultarNominatim(estruturado);
-    if (resultadoEstruturado != null) return resultadoEstruturado;
+    final tentativas = <Map<String, String>>[
+      _consultaEstruturada(
+        rua: [
+          numeroLimpo,
+          rua,
+        ].whereType<String>().where((v) => v.isNotEmpty).join(' '),
+        cidade: cidadeLimpa,
+        estado: estado,
+        cep: cepLimpo,
+      ),
+      _consultaEstruturada(
+        rua: rua,
+        cidade: cidadeLimpa,
+        estado: estado,
+        cep: cepLimpo,
+      ),
+      _consultaEstruturada(rua: rua, cidade: cidadeLimpa, estado: estado),
+    ];
 
-    return buscar(
-      [logradouro, numero, bairro, cidade, uf, cep, 'Brasil']
-          .whereType<String>()
-          .where((valor) => valor.trim().isNotEmpty)
-          .join(', '),
-    );
-  }
-
-  Future<Coordenada> buscar(String endereco) async {
-    final comBrasil = endereco.toLowerCase().contains('brasil')
-        ? endereco.trim()
-        : '${endereco.trim()}, Brasil';
-    final expandido = _expandirUf(comBrasil);
-    final semNumero = _removerNumeroDoImovel(expandido);
-    final tentativas = <String>{expandido, comBrasil, semNumero};
-
+    final unicas = <String>{};
     for (final tentativa in tentativas) {
-      final resultado = await _consultarNominatim({'q': tentativa});
+      final assinatura = tentativa.entries
+          .map((item) => '${item.key}=${item.value}')
+          .join('&');
+      if (!unicas.add(assinatura)) continue;
+      final resultado = await _consultarNominatim(tentativa);
       if (resultado != null) return resultado;
     }
-    throw Exception('Endereço não encontrado. Confira o CEP.');
+
+    final livre = [
+      rua,
+      numeroLimpo,
+      bairro,
+      cidadeLimpa,
+      estado,
+      cepLimpo,
+      'Brasil',
+    ].whereType<String>().where((valor) => valor.trim().isNotEmpty).join(', ');
+    return _consultarNominatim({'q': livre});
+  }
+
+  Map<String, String> _consultaEstruturada({
+    required String rua,
+    required String cidade,
+    String? estado,
+    String? cep,
+  }) {
+    final consulta = <String, String>{
+      'street': rua,
+      'city': cidade,
+      'country': 'Brasil',
+    };
+    if (estado != null) consulta['state'] = estado;
+    if (cep?.isNotEmpty ?? false) consulta['postalcode'] = cep!;
+    return consulta;
   }
 
   Future<Coordenada?> _consultarNominatim(Map<String, String> consulta) async {
@@ -211,7 +302,30 @@ class GeocodificacaoService {
     return double.tryParse(valor?.toString() ?? '');
   }
 
+  String? _texto(dynamic valor) {
+    final texto = valor?.toString().trim() ?? '';
+    return texto.isEmpty ? null : texto;
+  }
+
   void _log(String mensagem) {
     developer.log(mensagem, name: 'geocodificacao');
   }
+}
+
+class _DadosCep {
+  final String cep;
+  final String? logradouro;
+  final String? bairro;
+  final String? cidade;
+  final String? uf;
+
+  const _DadosCep({
+    required this.cep,
+    this.logradouro,
+    this.bairro,
+    this.cidade,
+    this.uf,
+  });
+
+  bool get temEndereco => logradouro != null && cidade != null;
 }

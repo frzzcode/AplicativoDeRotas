@@ -10,13 +10,16 @@ Aplicativo mobile desenvolvido para a disciplina de Engenharia de Software 2. O 
 - Armazenamento local com SQLite.
 - Cadastro e consulta de ordens de serviço;
 - Catálogo inicial pesquisável de ar-condicionado por marca, modelo, BTUs e potência.
+- Planejamento de rota por OS ou cliente, com sequência otimizada;
+- Mapa OpenStreetMap com traçado azul, distância e tempo estimados.
 
-## Rotas (integração em configuração)
+## Rotas
 
-A aba Rotas permite seleção múltipla de OS/clientes e prepara o cálculo da
-sequência pela Google Routes API. O cálculo real exige ativação da API,
-faturamento e configuração do serviço local. Veja [o guia de rotas](docs/ROTAS.md).
-O mapa abre no Google Maps do Android. Prioridades ficam para outra etapa.
+A aba Rotas permite selecionar várias OS ou vários clientes. O app localiza os
+endereços com BrasilAPI e Nominatim/OpenStreetMap, calcula distâncias rodoviárias
+e o traçado com OSRM e apresenta a sequência recomendada no mapa. Não é
+necessária chave de API nem cartão de crédito. Veja [o guia de rotas](docs/ROTAS.md).
+As prioridades das OS ficam para uma próxima etapa.
 
 ## Tecnologias utilizadas
 

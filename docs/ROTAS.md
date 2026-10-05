@@ -9,9 +9,10 @@ local ou `adb reverse`. O celular precisa apenas de acesso à internet.
 
 ## Como o cálculo funciona
 
-1. A BrasilAPI CEP V2 tenta localizar clientes e origem pelo CEP.
-2. Se o CEP não possuir coordenadas, o Nominatim/OpenStreetMap recebe uma
-   consulta estruturada e tentativas simplificadas do endereço.
+1. O Nominatim/OpenStreetMap tenta localizar rua, número, cidade e UF.
+2. Se necessário, a BrasilAPI CEP V2 completa os componentes do endereço e o
+   Nominatim faz uma nova tentativa. A coordenada aproximada da BrasilAPI não é
+   usada, pois CEPs diferentes podem receber o mesmo ponto genérico.
 3. As coordenadas do cliente são salvas internamente no banco local. O usuário
    não precisa vê-las nem digitá-las.
 4. O OSRM calcula uma matriz de distâncias pelas ruas, não em linha reta.
@@ -25,9 +26,15 @@ automaticamente e serão recalculadas na próxima rota. Rua e cidade são os dad
 mínimos para selecionar uma parada. UF e CEP são opcionais, mas aumentam a
 precisão quando existem ruas ou cidades com nomes semelhantes.
 
+Na atualização do banco para a versão 4, o cache de coordenadas criado pelas
+versões anteriores é limpo uma única vez. Clientes, ordens de serviço e todos
+os campos digitados são preservados. A próxima rota recalcula e salva os pontos
+corretos. O app também rejeita CEPs diferentes que um provedor tente posicionar
+exatamente na mesma coordenada, evitando exibir uma rota incorreta de 0 km.
+
 Na tela de rotas, o CEP da origem é obrigatório. O CEP continua opcional no
-cadastro geral do cliente, mas é a forma preferencial de localizar uma parada.
-Quando não estiver preenchido, o app tentará localizar pelo endereço textual.
+cadastro geral do cliente, mas ajuda a eliminar ambiguidades e completar o
+endereço. Quando não estiver preenchido, o app localizará pelo texto cadastrado.
 
 Nesta etapa a rota pode voltar à origem ou terminar em um atendimento fixo. A
 prioridade da OS ainda não participa do cálculo. A etapa futura deverá processar

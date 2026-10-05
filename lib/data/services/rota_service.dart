@@ -75,6 +75,10 @@ class RotaService {
       }
 
       final todosOsPontos = [origem, ...coordenadas];
+      _validarPontosGeocodificados(todosOsPontos, [
+        cepOrigem,
+        ...paradas.map((p) => p.cliente.cep ?? ''),
+      ]);
       final matriz = await _consultarMatriz(todosOsPontos);
       final ordem = _otimizador.otimizar(matriz, destino: destino);
       final ordenadas = [for (final indice in ordem) coordenadas[indice]];
@@ -106,14 +110,56 @@ class RotaService {
 
   Future<Coordenada> _localizarOrigem(String endereco, String cep) async {
     try {
+      if (!_ehRotuloDeOrigem(endereco)) {
+        try {
+          return await _geocodificacao.buscar('$endereco, $cep');
+        } catch (_) {
+          // Se o texto livre não existir no mapa, usamos os componentes
+          // oficiais obtidos pelo CEP na tentativa seguinte.
+        }
+      }
       final porCep = await _geocodificacao.buscarPorCep(cep);
       if (porCep != null) return porCep;
-      return await _geocodificacao.buscar('$endereco, $cep');
+      throw Exception('O CEP não pôde ser localizado no mapa.');
     } catch (erro) {
       throw Exception(
         'Não foi possível localizar a origem. Confira o endereço e o CEP. ${_mensagem(erro)}',
       );
     }
+  }
+
+  void _validarPontosGeocodificados(
+    List<Coordenada> pontos,
+    List<String> ceps,
+  ) {
+    for (var i = 0; i < pontos.length; i++) {
+      for (var j = i + 1; j < pontos.length; j++) {
+        final cepA = ceps[i].replaceAll(RegExp(r'\D'), '');
+        final cepB = ceps[j].replaceAll(RegExp(r'\D'), '');
+        final cepsDiferentes =
+            cepA.length == 8 && cepB.length == 8 && cepA != cepB;
+        if (cepsDiferentes && _mesmoPonto(pontos[i], pontos[j])) {
+          throw Exception(
+            'Dois CEPs diferentes foram localizados no mesmo ponto do mapa. '
+            'Atualize os endereços dos clientes e gere a rota novamente.',
+          );
+        }
+      }
+    }
+  }
+
+  bool _mesmoPonto(Coordenada a, Coordenada b) =>
+      (a.latitude - b.latitude).abs() < 0.00001 &&
+      (a.longitude - b.longitude).abs() < 0.00001;
+
+  bool _ehRotuloDeOrigem(String texto) {
+    final normalizado = texto.trim().toLowerCase();
+    return const {
+      'casa',
+      'minha casa',
+      'oficina',
+      'minha oficina',
+    }.contains(normalizado);
   }
 
   Future<Coordenada> _localizarParada(
