@@ -20,6 +20,8 @@ local ou `adb reverse`. O celular precisa apenas de acesso à internet.
    intermediárias e heurística com melhoria 2-opt para quantidades maiores.
 6. O OSRM retorna o traçado final e o aplicativo o desenha em azul sobre o mapa
    do OpenStreetMap, com origem e atendimentos numerados.
+7. A rota gerada é salva no SQLite como rota ativa, junto da geometria, da ordem
+   e do progresso de cada atendimento.
 
 Se o endereço de um cliente for alterado, as coordenadas antigas são removidas
 automaticamente e serão recalculadas na próxima rota. Rua e cidade são os dados
@@ -41,12 +43,36 @@ prioridade da OS ainda não participa do cálculo. A etapa futura deverá proces
 primeiro as OS de prioridade Alta, depois Média e por último Baixa, otimizando a
 ordem dentro desses grupos.
 
+## Navegação durante o atendimento
+
+Depois de gerar a rota, o painel mostra a próxima parada e permite abrir a
+navegação no Google Maps ou no Waze. Esses aplicativos usam a localização atual
+do aparelho e podem recalcular as ruas conforme trânsito ou bloqueios, enquanto
+o AplicativoDeRotas mantém a sequência otimizada dos clientes.
+
+Ao voltar para o aplicativo, o profissional marca o atendimento como concluído.
+A próxima parada passa a ser destacada automaticamente. Quando a rota foi
+planejada para voltar à origem, esse retorno também aparece como uma etapa.
+
+Rotas pequenas podem ser enviadas de uma vez ao Google Maps. Para manter
+compatibilidade com o limite de pontos intermediários dos links móveis, rotas
+maiores são abertas uma parada por vez. O progresso fica salvo no banco mesmo
+quando o Android fecha a tela enquanto o navegador externo está aberto.
+
+Os links universais utilizados não precisam de chave de API nem faturamento:
+
+- Google Maps: `https://www.google.com/maps/dir/?api=1...`
+- Waze: `https://waze.com/ul?...&navigate=yes`
+
 ## Arquivos principais
 
 - `lib/data/database/db_helper.dart`: banco e migração dos novos campos.
 - `lib/data/models/cliente.dart`: dados públicos e coordenadas internas.
 - `lib/data/services/geocodificacao_service.dart`: endereço para coordenadas.
 - `lib/data/services/rota_service.dart`: chamadas ao OSRM e montagem do resultado.
+- `lib/data/models/rota_ativa.dart`: rota persistida, etapas e progresso.
+- `lib/data/repositories/rota_repository.dart`: grava e recupera a rota ativa.
+- `lib/data/services/navegacao_service.dart`: links do Google Maps e Waze.
 - `lib/domain/services/otimizador_rota.dart`: algoritmo que ordena as paradas.
 - `lib/presentation/widgets/rota_mapa.dart`: mapa, linha azul e marcadores.
 - `lib/presentation/screens/rotas_screen.dart`: seleção e exibição da rota.

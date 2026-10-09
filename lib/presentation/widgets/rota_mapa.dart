@@ -6,8 +6,9 @@ import '../../data/services/rota_service.dart';
 
 class RotaMapa extends StatelessWidget {
   final ResultadoRota resultado;
+  final VoidCallback? onNavegar;
 
-  const RotaMapa({super.key, required this.resultado});
+  const RotaMapa({super.key, required this.resultado, this.onNavegar});
 
   LatLng _ponto(double latitude, double longitude) =>
       LatLng(latitude, longitude);
@@ -27,63 +28,82 @@ class RotaMapa extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: SizedBox(
         height: 380,
-        child: FlutterMap(
-          options: MapOptions(
-            initialCameraFit: CameraFit.coordinates(
-              coordinates: linha,
-              padding: const EdgeInsets.all(36),
-              maxZoom: 17,
-            ),
-            minZoom: 3,
-            maxZoom: 19,
-          ),
+        child: Stack(
           children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.example.tcc_rotas_tecnico',
-              maxNativeZoom: 19,
-            ),
-            PolylineLayer(
-              polylines: [
-                Polyline(
-                  points: linha,
-                  strokeWidth: 6,
-                  color: const Color(0xFF1565C0),
-                  borderStrokeWidth: 2,
-                  borderColor: Colors.white,
+            FlutterMap(
+              options: MapOptions(
+                initialCameraFit: CameraFit.coordinates(
+                  coordinates: linha,
+                  padding: const EdgeInsets.all(36),
+                  maxZoom: 17,
+                ),
+                minZoom: 3,
+                maxZoom: 19,
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.tcc_rotas_tecnico',
+                  maxNativeZoom: 19,
+                ),
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: linha,
+                      strokeWidth: 6,
+                      color: const Color(0xFF1565C0),
+                      borderStrokeWidth: 2,
+                      borderColor: Colors.white,
+                    ),
+                  ],
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: origem,
+                      width: 44,
+                      height: 44,
+                      child: const _Marcador(
+                        texto: 'I',
+                        cor: Color(0xFF2E7D32),
+                        icone: Icons.home,
+                      ),
+                    ),
+                    for (
+                      var i = 0;
+                      i < resultado.coordenadasParadas.length;
+                      i++
+                    )
+                      Marker(
+                        point: _ponto(
+                          resultado.coordenadasParadas[i].latitude,
+                          resultado.coordenadasParadas[i].longitude,
+                        ),
+                        width: 44,
+                        height: 44,
+                        child: _Marcador(
+                          texto: '${i + 1}',
+                          cor: const Color(0xFF1565C0),
+                        ),
+                      ),
+                  ],
+                ),
+                const SimpleAttributionWidget(
+                  source: Text('OpenStreetMap contributors'),
                 ),
               ],
             ),
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: origem,
-                  width: 44,
-                  height: 44,
-                  child: const _Marcador(
-                    texto: 'I',
-                    cor: Color(0xFF2E7D32),
-                    icone: Icons.home,
-                  ),
+            if (onNavegar != null)
+              Positioned(
+                top: 12,
+                right: 12,
+                child: FloatingActionButton.small(
+                  heroTag: null,
+                  tooltip: 'Iniciar navegação',
+                  onPressed: onNavegar,
+                  child: const Icon(Icons.navigation),
                 ),
-                for (var i = 0; i < resultado.coordenadasParadas.length; i++)
-                  Marker(
-                    point: _ponto(
-                      resultado.coordenadasParadas[i].latitude,
-                      resultado.coordenadasParadas[i].longitude,
-                    ),
-                    width: 44,
-                    height: 44,
-                    child: _Marcador(
-                      texto: '${i + 1}',
-                      cor: const Color(0xFF1565C0),
-                    ),
-                  ),
-              ],
-            ),
-            const SimpleAttributionWidget(
-              source: Text('OpenStreetMap contributors'),
-            ),
+              ),
           ],
         ),
       ),

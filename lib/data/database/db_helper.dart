@@ -25,16 +25,15 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _onCreate, // só roda na primeira vez que o app abre
       onUpgrade: _onUpgrade,
     );
   }
 
-  // Aqui é onde "nasce" a estrutura do banco.
-  // Por enquanto só a tabela clientes - as outras (categorias, marcas,
-  // modelos, ordens_servico, rotas, itens_rota) entram aqui quando
-  // formos construir os próximos módulos, dentro do mesmo _onCreate.
+  // Aqui é onde "nasce" a estrutura completa do banco em instalações novas.
+  // Em celulares que já possuem dados, o onUpgrade acrescenta somente as
+  // estruturas novas sem apagar clientes ou ordens de serviço existentes.
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE clientes (
@@ -55,6 +54,7 @@ class DBHelper {
     ''');
     await _criarTabelasOS(db);
     await _popularCatalogoArCondicionado(db);
+    await _criarTabelasRotas(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -77,6 +77,49 @@ class DBHelper {
       // digitado pelo usuário e nenhuma OS são removidos.
       await db.update('clientes', {'latitude': null, 'longitude': null});
     }
+    if (oldVersion < 5) {
+      // A rota ativa e seus itens passam a ser persistidos para o aplicativo
+      // continuar do mesmo ponto depois de abrir Google Maps ou Waze.
+      await _criarTabelasRotas(db);
+    }
+  }
+
+  Future<void> _criarTabelasRotas(Database db) async {
+    await db.execute('''
+      CREATE TABLE rotas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        criada_em TEXT NOT NULL,
+        modo TEXT NOT NULL,
+        origem_descricao TEXT NOT NULL,
+        cep_origem TEXT NOT NULL,
+        origem_latitude REAL NOT NULL,
+        origem_longitude REAL NOT NULL,
+        distancia_total REAL NOT NULL,
+        tempo_estimado REAL NOT NULL,
+        retorna_origem INTEGER NOT NULL DEFAULT 1,
+        retorno_concluido INTEGER NOT NULL DEFAULT 0,
+        geometria_json TEXT NOT NULL,
+        ativa INTEGER NOT NULL DEFAULT 1
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE itens_rota (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rota_id INTEGER NOT NULL,
+        posicao INTEGER NOT NULL,
+        chave TEXT NOT NULL,
+        titulo TEXT NOT NULL,
+        endereco TEXT NOT NULL,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        concluido INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (rota_id) REFERENCES rotas(id)
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_itens_rota_rota_posicao '
+      'ON itens_rota (rota_id, posicao)',
+    );
   }
 
   Future<void> _criarTabelasOS(Database db) async {
